@@ -1,49 +1,41 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
-import { useAuthenticator } from "@aws-amplify/ui-react";
-
-const client = generateClient<Schema>();
-
-function deleteTodo(id: string) {
-  client.models.Todo.delete({ id });
-}
+import { useAuth } from "react-oidc-context";
 
 function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const auth = useAuth();
 
-  const { user, signOut } = useAuthenticator();
+  const signOutRedirect = () => {
+    const clientId = "2por100pcamraltimsief8o38c";
+    const logoutUri = encodeURIComponent(window.origin + "/?logout=true");
+    const cognitoDomain = window.origin;
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
+  };
 
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
+  if (auth.isLoading) {
+    return <div>Loading...</div>;
+  }
 
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+  if (auth.error) {
+    return <div>Encountering error... {auth.error.message}</div>;
+  }
+
+  if (auth.isAuthenticated) {
+    return (
+      <div>
+        <pre> Hello: {auth.user?.profile.email} </pre>
+        <pre> ID Token: {auth.user?.id_token} </pre>
+        <pre> Access Token: {auth.user?.access_token} </pre>
+        <pre> Refresh Token: {auth.user?.refresh_token} </pre>
+
+        <button onClick={() => auth.removeUser()}>Sign out</button>
+      </div>
+    );
   }
 
   return (
-    <main>
-      <h1>{user?.signInDetails?.loginId}'s todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id} onClick={() => deleteTodo(todo.id)}>
-            {todo.content}
-          </li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-      <button onClick={signOut}>Sign out</button>
-    </main>
+    <div>
+      <button onClick={() => auth.signinRedirect()}>Sign in</button>
+      <button onClick={() => signOutRedirect()}>Sign out</button>
+    </div>
   );
 }
 

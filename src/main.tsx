@@ -1,19 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { AuthProvider } from "react-oidc-context";
+
+import "./index.css";
 import App from "./App.tsx";
 
-import { Authenticator } from "@aws-amplify/ui-react";
-import "./index.css";
-import "@aws-amplify/ui-react/styles.css";
-import { Amplify } from "aws-amplify";
-import outputs from "../amplify_outputs.json";
-
-Amplify.configure(outputs);
+const cognitoAuthConfig = {
+  authority:
+    "https://cognito-idp.eu-north-1.amazonaws.com/eu-north-1_RmN2p22cL",
+  client_id: "2por100pcamraltimsief8o38c",
+  redirect_uri: window.origin + "/",
+  response_type: "code",
+  scope: "aws.cognito.signin.user.admin email openid phone profile",
+};
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Authenticator>
+    <AuthProvider {...cognitoAuthConfig}>
       <App />
-    </Authenticator>
+    </AuthProvider>
   </React.StrictMode>
 );
