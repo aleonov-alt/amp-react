@@ -1,3 +1,4 @@
+import { CSSProperties, useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 
 function App() {
@@ -6,9 +7,19 @@ function App() {
   const signOutRedirect = () => {
     const clientId = "2por100pcamraltimsief8o38c";
     const logoutUri = encodeURIComponent(window.origin + "/?logout=true");
-    const cognitoDomain = window.origin;
+    const cognitoDomain = "https://oidc.auth.eu-north-1.amazoncognito.com";
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
   };
+
+  const code = new URLSearchParams(window.location.search).get("code");
+  useEffect(() => {
+    if (code && auth.isAuthenticated) {
+      const s = new URLSearchParams(window.location.search);
+      s.delete("code");
+      s.delete("state");
+      window.history.replaceState({}, "", `${window.location.pathname}?${s}`);
+    }
+  }, [code, auth.isAuthenticated]);
 
   if (auth.isLoading) {
     return <div>Loading...</div>;
@@ -19,14 +30,21 @@ function App() {
   }
 
   if (auth.isAuthenticated) {
+    const w: CSSProperties = {
+      width: "30em",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    };
+
     return (
       <div>
-        <pre> Hello: {auth.user?.profile.email} </pre>
-        <pre> ID Token: {auth.user?.id_token} </pre>
-        <pre> Access Token: {auth.user?.access_token} </pre>
-        <pre> Refresh Token: {auth.user?.refresh_token} </pre>
+        <div> Hello: {auth.user?.profile.email} </div>
+        <div style={w}> ID Token: {auth.user?.id_token} </div>
+        <div style={w}> Access Token: {auth.user?.access_token} </div>
+        <div style={w}> Refresh Token: {auth.user?.refresh_token} </div>
 
-        <button onClick={() => auth.removeUser()}>Sign out</button>
+        <button onClick={() => signOutRedirect()}>Sign out</button>
       </div>
     );
   }
@@ -34,7 +52,6 @@ function App() {
   return (
     <div>
       <button onClick={() => auth.signinRedirect()}>Sign in</button>
-      <button onClick={() => signOutRedirect()}>Sign out</button>
     </div>
   );
 }
